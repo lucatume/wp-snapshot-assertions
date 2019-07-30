@@ -6,7 +6,7 @@
 
 ## Installation
 ```bash
-composer require lucatume/wp-snapshot-assertions --dev
+composer require lucatume/wp-snaphot-assertions --dev
 ```
 
 ## Usage
