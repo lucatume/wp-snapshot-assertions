@@ -45,12 +45,12 @@ class WPHtmlOutputDriver extends VarDriver {
 	 * @var array An array of attributes that will contain full URLs in the
 	 *            snapshot code.
 	 */
-	protected $urlAttributes = ['href', 'src'];
+	protected $urlAttributes = [ 'href', 'src' ];
 	/** @noinspection SpellCheckingInspection */
 
 	/**
-	 * @var array An array of keys to identify time-dependent attributes that hold
-	 *            unique/time-dependent data values.
+	 * @var array<string,array> A map to identify time-dependent attributes that hold
+	 *                          unique/time-dependent data values; keys are the contexts the query will apply to.
 	 */
 	protected $timeDependentAttributes = [];
 
@@ -58,7 +58,7 @@ class WPHtmlOutputDriver extends VarDriver {
 	 * @var array An array of keys used in `id` and `name` attributes by WordPress
 	 *            to identify time-dependent values like nonces.
 	 */
-	protected $timeDependentKeys = ['_wpnonce'];
+	protected $timeDependentKeys = [ '_wpnonce' ];
 
 	/**
 	 * @var string  The current WordPress installation full URL,
@@ -74,14 +74,14 @@ class WPHtmlOutputDriver extends VarDriver {
 	/**
 	 * WPHtmlOutputDriver constructor.
 	 *
-	 * @param string      $currentUrl  The current WordPress full URL,
+	 * @param string $currentUrl The current WordPress full URL,
 	 *                                 e.g. `http://example.com`
 	 * @param string|null $snapshotUrl The WordPress URL used in the snapshot file; this
 	 *                                 will narrow down the replacement to WordPress generated
 	 *                                 URLs only.
 	 */
-	public function __construct(string $currentUrl = '', string $snapshotUrl = null) {
-		$this->currentUrl = $currentUrl;
+	public function __construct( string $currentUrl = '', string $snapshotUrl = NULL ) {
+		$this->currentUrl  = $currentUrl;
 		$this->snapshotUrl = $snapshotUrl;
 	}
 
@@ -95,17 +95,17 @@ class WPHtmlOutputDriver extends VarDriver {
 	 *
 	 * @throws \PHPUnit\Framework\ExpectationFailedException
 	 */
-	public function match($expected, $actual) {
-		$evaluated = $this->evalCode($expected);
+	public function match( $expected, $actual ) {
+		$evaluated = $this->evalCode( $expected );
 
-		$normalizedExpected = $this->normalizeHtml($this->removeTimeAttributes($this->removeTimeValues($this->replaceUrls($evaluated))));
-		$normalizedActual = $this->normalizeHtml($this->removeTimeAttributes($this->removeTimeValues($actual)));
+		$normalizedExpected = $this->normalizeHtml( $this->removeTimeAttributes( $this->removeTimeValues( $this->replaceUrls( $evaluated ) ) ) );
+		$normalizedActual   = $this->normalizeHtml( $this->removeTimeAttributes( $this->removeTimeValues( $actual ) ) );
 
-		if ( ! empty($this->tolerableDifferences)) {
-			$normalizedActual = $this->applyTolerableDifferences($normalizedExpected, $normalizedActual);
+		if ( ! empty( $this->tolerableDifferences ) ) {
+			$normalizedActual = $this->applyTolerableDifferences( $normalizedExpected, $normalizedActual );
 		}
 
-		Assert::assertEquals($normalizedExpected, $normalizedActual);
+		Assert::assertEquals( $normalizedExpected, $normalizedActual );
 	}
 
 	/**
@@ -115,102 +115,106 @@ class WPHtmlOutputDriver extends VarDriver {
 	 *
 	 * @return string The rendered HTML
 	 */
-	public function evalCode(string $snapshotCode): string {
-		return eval(substr($snapshotCode, strlen('<?php ')));
+	public function evalCode( string $snapshotCode ): string {
+		return eval( substr( $snapshotCode, strlen( '<?php ' ) ) );
 	}
 
-	protected function normalizeHtml(string $input): string {
-		$doc = \phpQuery::newDocument($input);
+	protected function normalizeHtml( string $input ): string {
+		$doc = \phpQuery::newDocument( $input );
 
 		return $doc->__toString();
 	}
 
-	protected function removeTimeAttributes(string $input): string {
-		$doc = \phpQuery::newDocument($input);
+	protected function removeTimeAttributes( string $input ): string {
+		$doc = \phpQuery::newDocument( $input );
 
-		foreach ($this->timeDependentAttributes as $name) {
-			$doc->find("*[{$name}]")->each(function (\DOMElement $t) use ($name) {
-				$t->setAttribute($name, '');
-			});
+		foreach ( $this->timeDependentAttributes as $context => $attributes ) {
+			$locatorTemplate = $context === 'all' ? '*[%s]' : $context . ' [%s]';
+			foreach ( $attributes as $name ) {
+				$locator = sprintf( $locatorTemplate, $name );
+				$doc->find( $locator )->each( static function ( \DOMElement $t ) use ( $name ) {
+					$t->setAttribute( $name, '' );
+				} );
+			}
 		}
 
-		return $this->normalizeHtml($doc->__toString());
+		return $this->normalizeHtml( $doc->__toString() );
 	}
 
-	protected function removeTimeValues(string $input): string {
-		$doc = \phpQuery::newDocument($input);
+	protected function removeTimeValues( string $input ): string {
+		$doc = \phpQuery::newDocument( $input );
 
-		foreach ($this->timeDependentKeys as $name) {
-			$doc->find("#{$name},*[name='{$name}'],.{$name}")->each(function (\DOMElement $t) {
-				$t->setAttribute('value', '');
-			});
+		foreach ( $this->timeDependentKeys as $name ) {
+			$doc->find( "#{$name},*[name='{$name}'],.{$name}" )->each( function ( \DOMElement $t ) {
+				$t->setAttribute( 'value', '' );
+			} );
 		}
 
-		return $this->normalizeHtml($doc->__toString());
+		return $this->normalizeHtml( $doc->__toString() );
 	}
 
-	protected function replaceUrls(string $input): string {
-		$doc = \phpQuery::newDocument($input);
+	protected function replaceUrls( string $input ): string {
+		$doc = \phpQuery::newDocument( $input );
 
-		foreach ($this->urlAttributes as $name) {
-			$selector = empty($this->snapshotUrl) ? "*[{$name}]" : "*[{$name}^='{$this->snapshotUrl}']";
-			$doc->find($selector)->each(function (\DOMElement $t) use ($name) {
-				$current = $t->getAttribute($name);
-				$snapshotUrl = sprintf('%s://%s', parse_url($current, PHP_URL_SCHEME), parse_url($current, PHP_URL_HOST));
+		foreach ( $this->urlAttributes as $name ) {
+			$selector = empty( $this->snapshotUrl ) ? "*[{$name}]" : "*[{$name}^='{$this->snapshotUrl}']";
+			$doc->find( $selector )->each( function ( \DOMElement $t ) use ( $name ) {
+				$current     = $t->getAttribute( $name );
+				$snapshotUrl = sprintf( '%s://%s', parse_url( $current, PHP_URL_SCHEME ), parse_url( $current, PHP_URL_HOST ) );
 
-				if ($port = parse_url($current, PHP_URL_PORT)) {
+				if ( $port = parse_url( $current, PHP_URL_PORT ) ) {
 					$snapshotUrl .= ":{$port}";
 				}
 
-				$t->setAttribute($name, str_replace($snapshotUrl, $this->currentUrl, $current));
-			});
+				$t->setAttribute( $name, str_replace( $snapshotUrl, $this->currentUrl, $current ) );
+			} );
 		}
 
 		$html = $doc->__toString();
 
-		return $this->normalizeHtml($html);
+		return $this->normalizeHtml( $html );
 	}
 
-	protected function applyTolerableDifferences(string $expected, string $actual): string {
-		$expectedDelims = array_unique(preg_split('/[A-Za-z0-9]/', $expected));
-		$actualDelims = array_unique(preg_split('/[A-Za-z0-9]/', $actual));
+	protected function applyTolerableDifferences( string $expected, string $actual ): string {
+		$expectedDelims = array_unique( preg_split( '/[A-Za-z0-9]/', $expected ) );
+		$actualDelims   = array_unique( preg_split( '/[A-Za-z0-9]/', $actual ) );
 
-		$expectedNoDelims = preg_replace('/[^A-Za-z0-9]/', ' ', str_replace($expectedDelims, ' ', $expected));
-		$actualNoDelims = preg_replace('/[^A-Za-z0-9]/', ' ', str_replace($actualDelims, ' ', $actual));
+		$expectedNoDelims = preg_replace( '/[^A-Za-z0-9]/', ' ', str_replace( $expectedDelims, ' ', $expected ) );
+		$actualNoDelims   = preg_replace( '/[^A-Za-z0-9]/', ' ', str_replace( $actualDelims, ' ', $actual ) );
 
-		$expectedFrags = array_map('trim', array_filter(explode(' ', $expectedNoDelims)));
-		$actualFrags = array_map('trim', array_filter(explode(' ', $actualNoDelims)));
+		$expectedFrags = array_map( 'trim', array_filter( explode( ' ', $expectedNoDelims ) ) );
+		$actualFrags   = array_map( 'trim', array_filter( explode( ' ', $actualNoDelims ) ) );
 
 		$tolerated = [];
-		foreach ($actualFrags as $i => $value) {
-			if ( ! isset($expectedFrags[$i])) {
+		foreach ( $actualFrags as $i => $value ) {
+			if ( ! isset( $expectedFrags[ $i ] ) ) {
 				continue;
 			}
-			if ($actualFrags[$i] == $expectedFrags[$i]) {
+			if ( $actualFrags[ $i ] == $expectedFrags[ $i ] ) {
 				continue;
 			}
 
-			if (in_array($actualFrags[$i], $this->tolerableDifferences)) {
-				$tolerated[$actualFrags[$i]] = $expectedFrags[$i];
+			if ( in_array( $actualFrags[ $i ], $this->tolerableDifferences ) ) {
+				$tolerated[ $actualFrags[ $i ] ] = $expectedFrags[ $i ];
 			}
 		}
 
-		foreach ($tolerated as $find => $replace) {
-			$prefixes = array_map(function ($pre) {
-				return preg_quote($pre, '/');
-			}, $this->prefixes);
+		foreach ( $tolerated as $find => $replace ) {
+			$prefixes = array_map( function ( $pre ) {
+				return preg_quote( $pre, '/' );
+			}, $this->prefixes );
 
-			$postfixes = array_map(function ($post) {
-				return preg_quote($post, '/');
-			}, $this->postfixes);
+			$postfixes = array_map( function ( $post ) {
+				return preg_quote( $post, '/' );
+			}, $this->postfixes );
 
-			$findPattern = '(' . implode('|', $prefixes) . ')*' . preg_quote($find, '/') . '(' . implode('|', $postfixes) . ')*';
+			$findPattern = '(' . implode( '|', $prefixes ) . ')*' . preg_quote( $find, '/' ) . '(' . implode( '|', $postfixes ) . ')*';
 
 			$pattern = '/(?<![\\w\\d])' . $findPattern . '(?![\\w\\d])/';
 
 			$replacement = '${1}' . $replace . '${2}';
 
-			$actual = preg_replace($pattern, $replacement, $actual);
+			$actual = preg_replace( $pattern, $replacement, $actual );
 		}
 
 		return $actual;
@@ -231,9 +235,16 @@ class WPHtmlOutputDriver extends VarDriver {
 	 * by attribute name time-dependent values like data attributes.
 	 *
 	 * @param array $timeDependentAttributes
+	 * @param string $context An optional context to limit the application of the query for the attributes.
 	 */
-	public function setTimeDependentAttributes(array $timeDependentAttributes) {
-		$this->timeDependentAttributes = $timeDependentAttributes;
+	public function setTimeDependentAttributes( array $timeDependentAttributes, string $context = 'all' ) {
+		if ( ! isset( $this->timeDependentAttributes[ $context ] ) ) {
+			$this->timeDependentAttributes[ $context ] = $timeDependentAttributes;
+
+			return;
+		}
+
+		$this->timeDependentAttributes[ $context ][] = $timeDependentAttributes;
 	}
 
 	/**
@@ -254,7 +265,7 @@ class WPHtmlOutputDriver extends VarDriver {
 	 *
 	 * @param array $timeDependentKeys
 	 */
-	public function setTimeDependentKeys(array $timeDependentKeys) {
+	public function setTimeDependentKeys( array $timeDependentKeys ) {
 		$this->timeDependentKeys = $timeDependentKeys;
 	}
 
@@ -274,7 +285,7 @@ class WPHtmlOutputDriver extends VarDriver {
 	 *
 	 * @param array $urlAttributes
 	 */
-	public function setUrlAttributes(array $urlAttributes) {
+	public function setUrlAttributes( array $urlAttributes ) {
 		$this->urlAttributes = $urlAttributes;
 	}
 
@@ -292,7 +303,7 @@ class WPHtmlOutputDriver extends VarDriver {
 	 *
 	 * @param array $tolerableDifferences
 	 */
-	public function setTolerableDifferences(array $tolerableDifferences) {
+	public function setTolerableDifferences( array $tolerableDifferences ) {
 		$this->tolerableDifferences = $tolerableDifferences;
 	}
 
@@ -310,7 +321,7 @@ class WPHtmlOutputDriver extends VarDriver {
 	 *
 	 * @param array $prefixes
 	 */
-	public function setTolerableDifferencesPrefixes(array $prefixes) {
+	public function setTolerableDifferencesPrefixes( array $prefixes ) {
 		$this->prefixes = $prefixes;
 	}
 
@@ -328,7 +339,7 @@ class WPHtmlOutputDriver extends VarDriver {
 	 *
 	 * @param array $postfixes
 	 */
-	public function setTolerableDifferencesPostfixes(array $postfixes) {
+	public function setTolerableDifferencesPostfixes( array $postfixes ) {
 		$this->postfixes = $postfixes;
 	}
 }

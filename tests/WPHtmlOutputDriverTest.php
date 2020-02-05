@@ -2,6 +2,7 @@
 
 namespace tad\WP\Snapshots;
 
+use PHPUnit\Framework\AssertionFailedError;
 use PHPUnit\Framework\TestCase;
 use tad\WP\Snapshots\WPHtmlOutputDriver as Driver;
 
@@ -275,6 +276,44 @@ class WPHtmlOutputDriverTest extends TestCase {
 		$expected = str_replace(['{{one}}', '{{two}}'], ['foo', 'bar'], $template);
 
 		$driver->setTimeDependentAttributes(['data-id']);
+
+		$driver->match($expected, $driver->evalCode($actual));
+	}
+
+	/**
+	 * It should allow setting a context for time dependent data attributes
+	 *
+	 * @test
+	 */
+	public function should_allow_setting_a_context_for_time_dependent_data_attributes() {
+		$template = $this->getSourceFileContents('html-11');
+
+		$driver = new Driver();
+
+		$actual = str_replace(['{{one}}', '{{two}}'], ['23', '89'], $template);
+		$expected = str_replace(['{{one}}', '{{two}}'], ['foo', 'bar'], $template);
+
+		$driver->setTimeDependentAttributes(['data-id'],'.container');
+
+		$driver->match($expected, $driver->evalCode($actual));
+	}
+
+	/**
+	 * It should fail if context set for time dependent attributes does not cover time dependent attribute
+	 *
+	 * @test
+	 */
+	public function should_fail_if_context_set_for_time_dependent_attributes_does_not_cover_time_dependent_attribute() {
+		$template = $this->getSourceFileContents('html-12');
+
+		$driver = new Driver();
+
+		$actual = str_replace(['{{one}}', '{{two}}'], ['23', '89'], $template);
+		$expected = str_replace(['{{one}}', '{{two}}'], ['foo', 'bar'], $template);
+
+		$driver->setTimeDependentAttributes(['data-id'],'.container__one');
+
+		$this->expectException(AssertionFailedError::class);
 
 		$driver->match($expected, $driver->evalCode($actual));
 	}

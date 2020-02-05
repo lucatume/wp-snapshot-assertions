@@ -1,0 +1,12 @@
+name: CI
+on: [push]
+jobs:
+  test:
+    name: PHPUnit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: MilesChou/composer-action/7.0/install@master
+      - uses: docker://php:7.0
+        with:
+          args: php vendor/bin/phpunit
