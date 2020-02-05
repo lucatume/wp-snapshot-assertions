@@ -6,9 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-Add `setTimeDependentAttributes()` method.
+## [1.1.0]
+Add `setTimeDependentAttributes()` method (thanks @borkweb)
 
 ## [1.0.0]
 Initial commit - extracted from the `lucatume/wp-browser` package
 
-[Unreleased]: https://github.com/lucautme/wp-snapshot-assertions/compare/1.0.0...HEAD
+[1.1.0]: https://github.com/lucatume/wp-snapshot-assertions/compare/1.0.0...1.1.0
+[Unreleased]: https://github.com/lucatume/wp-snapshot-assertions/compare/1.1.0...HEAD
