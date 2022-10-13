@@ -5,11 +5,13 @@
 [![Build Status](https://travis-ci.org/lucatume/wp-snapshot-assertions.svg?branch=master)](https://travis-ci.org/lucatume/wp-snapshot-assertions)
 
 ## Installation
+
 ```bash
 composer require lucatume/wp-snaphot-assertions --dev
 ```
 
 ## Usage
+
 Snapshot testing comes very handy when testing the HTML output of some WordPress generated and managed code.  
 In such instances WordPress will often generate time-dependent values, like nonces, and full URLs, like image sources.  
 Those environment and time related differences might break a snapshot for the wrong reasons; e.g. the snapshot was generated on one machine (say locally) and ran on another machine where WordPress might be served at another URL and the test will surely run at a different time (say CI).  

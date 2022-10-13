@@ -3,7 +3,7 @@
 namespace tad\WP\Snapshots;
 
 use PHPUnit\Framework\Assert;
-use Spatie\Snapshots\Drivers\VarDriver;
+use Spatie\Snapshots\Drivers\HtmlDriver;
 
 /** @noinspection SpellCheckingInspection */
 
@@ -24,7 +24,7 @@ use Spatie\Snapshots\Drivers\VarDriver;
  * @see     https://github.com/spatie/phpunit-snapshot-assertions
  * @see     https://packagist.org/packages/spatie/phpunit-snapshot-assertions
  */
-class WPHtmlOutputDriver extends VarDriver {
+class WPHtmlOutputDriver extends HtmlDriver {
 
 	/**
 	 * @var array An array of strings that will be considered tolerable differences.

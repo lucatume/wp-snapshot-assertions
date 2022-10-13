@@ -19,9 +19,9 @@ class WPHtmlOutputDriverTest extends TestCase {
 
 	/**
 	 * @test
-	 * it should be instantiatable
+	 * it should be instantiable
 	 */
-	public function it_should_be_instantiatable() {
+	public function it_should_be_instantiable() {
 		$sut = $this->make_instance();
 
 		$this->assertInstanceOf(Driver::class, $sut);
