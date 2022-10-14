@@ -15,7 +15,7 @@
     }
   ],
   "require": {
-    "php": ">=7.0",
+    "php": "^7.3|^7.4|^8.0",
     "ext-dom": "*",
     "spatie/phpunit-snapshot-assertions": "^4.2",
     "electrolinux/phpquery": "^0.9.6"
