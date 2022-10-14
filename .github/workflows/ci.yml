@@ -6,9 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: MilesChou/composer-action/7.0@master
+      - uses: MilesChou/composer-action/7.3@master
         with:
           args: update
-      - uses: docker://php:7.0
+      - uses: docker://php:7.3
         with:
           args: php vendor/bin/phpunit
